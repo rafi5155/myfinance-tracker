@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="bn" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>পার্সোনাল ফিন্যান্স ট্র্যাকার - ব্যাংক ও ক্যাশ ট্রান্সফার সহ</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Font (Hind Siliguri) -->
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Hind Siliguri', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Hind Siliguri', sans-serif; }
+        .tab-btn.active {
+            border-bottom-width: 3px;
+            border-color: #0284c7;
+            color: #0284c7;
+            font-weight: 700;
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="h-full text-slate-800 antialiased flex flex-col min-h-screen">
+
+    <!-- Header / Navbar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center space-x-3 space-x-reverse">
+                    <div class="bg-sky-600 text-white p-2.5 rounded-xl shadow-md">
+                        <i class="fa-solid fa-wallet text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-slate-900 leading-tight">পার্সোনাল ফিন্যান্স ট্র্যাকার</h1>
+                        <p class="text-xs text-slate-500">ব্যাংক, ক্যাশ, ট্রান্সফার ও আয়-ব্যয়ের হিসাব</p>
+                    </div>
+                </div>
+
+                <!-- Backup & Reset Buttons -->
+                <div class="flex items-center space-x-2 space-x-reverse">
+                    <button onclick="exportData()" class="px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-download"></i> <span class="hidden sm:inline">ব্যাকআপ</span>
+                    </button>
+                    <label class="px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg cursor-pointer transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-upload"></i> <span class="hidden sm:inline">রিডিজিটাল</span>
+                        <input type="file" id="importFileInput" class="hidden" accept=".json" onchange="importData(event)">
+                    </label>
+                    <button onclick="confirmReset()" class="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition flex items-center gap-1">
+                        <i class="fa-solid fa-rotate-left"></i> <span class="hidden sm:inline">রিসেট</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Navigation Tabs -->
+            <div class="flex space-x-6 space-x-reverse border-t border-slate-100 text-sm overflow-x-auto">
+                <button onclick="switchTab('overview')" id="tab-overview" class="tab-btn active py-3 px-1 inline-flex items-center gap-2 text-slate-600 whitespace-nowrap">
+                    <i class="fa-solid fa-chart-pie"></i> ওভারভিউ
+                </button>
+                <button onclick="switchTab('transfer')" id="tab-transfer" class="tab-btn py-3 px-1 inline-flex items-center gap-2 text-amber-600 font-semibold whitespace-nowrap">
+                    <i class="fa-solid fa-right-left"></i> ফান্ড ট্রান্সফার (ক্যাশ ⇄ ব্যাংক)
+                </button>
+                <button onclick="switchTab('accounts')" id="tab-accounts" class="tab-btn py-3 px-1 inline-flex items-center gap-2 text-slate-600 whitespace-nowrap">
+                    <i class="fa-solid fa-building-columns"></i> ব্যাংক ও ক্যাশ একাউন্ট
+                </button>
+                <button onclick="switchTab('transactions')" id="tab-transactions" class="tab-btn py-3 px-1 inline-flex items-center gap-2 text-slate-600 whitespace-nowrap">
+                    <i class="fa-solid fa-receipt"></i> আয় ও ব্যয়
+                </button>
+                <button onclick="switchTab('assets')" id="tab-assets" class="tab-btn py-3 px-1 inline-flex items-center gap-2 text-slate-600 whitespace-nowrap">
+                    <i class="fa-solid fa-vault"></i> সম্পদ ও দায়
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        
+        <!-- ==================== TAB 1: OVERVIEW DASHBOARD ==================== -->
+        <div id="view-overview" class="space-y-6">
+            
+            <!-- Key Financial Metrics Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                
+                <!-- Cash Balance Card -->
+                <div class="bg-amber-50/60 p-4 rounded-2xl border border-amber-200/80 shadow-sm relative overflow-hidden">
+                    <p class="text-xs font-bold text-amber-800">নগদ টাকা (Cash Balance)</p>
+                    <h3 id="stat-cash" class="text-2xl font-black text-amber-600 mt-1">৳ 0</h3>
+                    <div class="absolute top-3 right-3 text-amber-500/20 text-3xl"><i class="fa-solid fa-money-bill-wave"></i></div>
+                </div>
+
+                <!-- Bank Balance Card -->
+                <div class="bg-sky-50/60 p-4 rounded-2xl border border-sky-200/80 shadow-sm relative overflow-hidden">
+                    <p class="text-xs font-bold text-sky-800">ব্যাংক জমা (Bank Balance)</p>
+                    <h3 id="stat-bank" class="text-2xl font-black text-sky-600 mt-1">৳ 0</h3>
+                    <div class="absolute top-3 right-3 text-sky-500/20 text-3xl"><i class="fa-solid fa-building-columns"></i></div>
+                </div>
+
+                <!-- Total Cash + Bank (Liquid) Card -->
+                <div class="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-200/80 shadow-sm relative overflow-hidden">
+                    <p class="text-xs font-bold text-emerald-800">মোট চলতি টাকা (ক্যাশ+ব্যাংক)</p>
+                    <h3 id="stat-liquid" class="text-xl font-bold text-emerald-600 mt-1">৳ 0</h3>
+                    <div class="absolute top-3 right-3 text-emerald-500/20 text-2xl"><i class="fa-solid fa-coins"></i></div>
+                </div>
+
+                <!-- Fixed Assets Card -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden">
+                    <p class="text-xs font-semibold text-slate-500">মোট স্থায়ী সম্পদ</p>
+                    <h3 id="stat-assets" class="text-xl font-bold text-teal-600 mt-1">৳ 0</h3>
+                    <div class="absolute top-3 right-3 text-teal-500/20 text-2xl"><i class="fa-solid fa-gem"></i></div>
+                </div>
+
+                <!-- Total Liabilities Card -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden">
+                    <p class="text-xs font-semibold text-slate-500">মোট দায় ও ঋণ</p>
+                    <h3 id="stat-liabilities" class="text-xl font-bold text-rose-600 mt-1">৳ 0</h3>
+                    <div class="absolute top-3 right-3 text-rose-500/20 text-2xl"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+                </div>
+
+                <!-- Net Worth Card -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden bg-gradient-to-br from-white to-sky-50/40">
+                    <p class="text-xs font-semibold text-slate-700">প্রকৃত নিট মূল্য (Net Worth)</p>
+                    <h3 id="stat-networth" class="text-xl font-bold text-indigo-700 mt-1">৳ 0</h3>
+                    <div class="absolute top-3 right-3 text-indigo-500/20 text-2xl"><i class="fa-solid fa-chart-line"></i></div>
+                </div>
+
+            </div>
+
+            <!-- Quick Action Banner for Fund Transfer -->
+            <div class="bg-gradient-to-r from-amber-500 to-sky-600 rounded-2xl p-4 text-white shadow-md flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="bg-white/20 p-3 rounded-xl"><i class="fa-solid fa-right-left text-2xl"></i></div>
+                    <div>
+                        <h4 class="font-bold text-base">ব্যাংক থেকে টাকা ক্যাশ করেছেন বা ব্যাংকে জমা দিয়েছেন?</h4>
+                        <p class="text-xs text-amber-100">ক্যাশ ও ব্যাংক অ্যাকাউন্টের মধ্যে সহজেই ফান্ড ট্রান্সফার এনট্রি দিন</p>
+                    </div>
+                </div>
+                <button onclick="switchTab('transfer')" class="px-4 py-2 bg-white text-slate-900 hover:bg-amber-50 font-bold rounded-xl text-xs transition shadow whitespace-nowrap">
+                    <i class="fa-solid fa-arrow-right-arrow-left text-amber-600"></i> এখনই ট্রান্সফার করুন
+                </button>
+            </div>
+
+            <!-- Analytical Charts Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Income vs Expense Bar Chart -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm lg:col-span-2">
+                    <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-bar text-sky-600"></i> আয় বনাম ব্যয়ের হিসাব
+                    </h4>
+                    <div class="h-64 relative">
+                        <canvas id="incomeExpenseChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Category Expenses Breakdown -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                    <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-pie text-rose-500"></i> ব্যয়ের খাতসমূহ
+                    </h4>
+                    <div class="h-64 relative flex justify-center">
+                        <canvas id="expenseCategoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Balances Summary List -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-wallet text-sky-600"></i> সকল অ্যাকাউন্টের বর্তমান ব্যালেন্স
+                    </h4>
+                    <button onclick="switchTab('accounts')" class="text-xs text-sky-600 hover:underline font-semibold">+ অ্যাকাউন্ট পরিচালনা</button>
+                </div>
+                <div id="quick-accounts-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ==================== TAB 2: EXPLICIT FUND TRANSFER ==================== -->
+        <div id="view-transfer" class="hidden space-y-6 max-w-3xl mx-auto">
+            <div class="bg-white p-6 rounded-2xl border border-amber-200/80 shadow-md">
+                <div class="flex items-center gap-3 border-b pb-4 mb-5">
+                    <div class="bg-amber-100 text-amber-700 p-3 rounded-xl"><i class="fa-solid fa-right-left text-xl"></i></div>
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-900">ফান্ড ট্রান্সফার (Fund Transfer)</h3>
+                        <p class="text-xs text-slate-500">ব্যাংক থেকে ক্যাশ উত্তোলন, ক্যাশ জমা বা বিকাশ/নগদে ট্রান্সফার করুন</p>
+                    </div>
+                </div>
+
+                <form onsubmit="handleFundTransfer(event)" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- From Account -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1.5"><i class="fa-solid fa-arrow-up-from-bracket text-red-500"></i> উৎস অ্যাকাউন্ট (কোথা থেকে টাকা বের হবে?)</label>
+                            <select id="transferFromAcc" required class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-medium">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+
+                        <!-- To Account -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1.5"><i class="fa-solid fa-arrow-down-to-bracket text-emerald-500"></i> গন্তব্য অ্যাকাউন্ট (কোথায় টাকা জমা হবে?)</label>
+                            <select id="transferToAcc" required class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-medium">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Amount -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">টাকার পরিমাণ (৳)</label>
+                            <input type="number" id="transferAmount" min="1" step="any" required placeholder="0.00" class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-semibold">
+                        </div>
+
+                        <!-- Date -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">তারিখ</label>
+                            <input type="date" id="transferDate" required class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Note -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">বিবরণ / নোট (ঐচ্ছিক)</label>
+                        <input type="text" id="transferNote" placeholder="যেমন: ATM থেকে ক্যাশ উত্তোলন, ব্যাংকে ক্যাশ ডিপিএস জমা..." class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none">
+                    </div>
+
+                    <button type="submit" class="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-sm shadow-md transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-check-circle"></i> ট্রান্সফার সম্পন্ন করুন
+                    </button>
+                </form>
+            </div>
+
+            <!-- Transfer History Log -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                <h4 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-amber-600"></i> সাম্প্রতিক ট্রান্সফার সমূহের ইতিহাস
+                </h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-600">
+                        <thead class="bg-slate-50 border-b">
+                            <tr>
+                                <th class="p-2.5">তারিখ</th>
+                                <th class="p-2.5">উৎস ➔ গন্তব্য</th>
+                                <th class="p-2.5">বিবরণ</th>
+                                <th class="p-2.5 text-right">পরিমাণ</th>
+                                <th class="p-2.5 text-center">একশন</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transferHistoryBody" class="divide-y divide-slate-100">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 3: ACCOUNTS MANAGEMENT ==================== -->
+        <div id="view-accounts" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Add Account Form -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm h-fit">
+                    <h3 class="font-bold text-lg text-slate-900 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-circle-plus text-sky-600"></i> নতুন ব্যাংক/ক্যাশ একাউন্ট যোগ করুন
+                    </h3>
+                    <form id="accountForm" onsubmit="handleAddAccount(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">একাউন্টের ধরন</label>
+                            <select id="accType" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+                                <option value="Cash">নগদ টাকা (Cash)</option>
+                                <option value="Bank">ব্যাংক অ্যাকাউন্ট (Bank)</option>
+                                <option value="Mobile">মোবাইল ব্যাংকিং (বিকাশ/নগদ/রকেট)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">একাউন্টের নাম</label>
+                            <input type="text" id="accName" required placeholder="যেমন: মূল ক্যাশ, ডাচ বাংলা ব্যাংক, বিকাশ..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">প্রাথমিক ব্যালেন্স (৳)</label>
+                            <input type="number" id="accBalance" step="any" required placeholder="0.00" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+                        </div>
+
+                        <button type="submit" class="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-medium rounded-xl text-sm shadow-md transition">
+                            অ্যাকাউন্ট সেভ করুন
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Accounts List Table -->
+                <div class="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col">
+                    <h3 class="font-bold text-lg text-slate-900 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-list text-slate-600"></i> আপনার ব্যাংক ও নগদ অ্যাকাউন্ট তালিকা
+                    </h3>
+
+                    <div class="overflow-x-auto flex-1">
+                        <table class="w-full text-left text-xs text-slate-600">
+                            <thead class="bg-slate-50 text-slate-700 font-semibold uppercase border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3">ধরণ</th>
+                                    <th class="p-3">একাউন্টের নাম</th>
+                                    <th class="p-3 text-right">বর্তমান ব্যালেন্স</th>
+                                    <th class="p-3 text-center">একশন</th>
+                                </tr>
+                            </thead>
+                            <tbody id="accountsTableBody" class="divide-y divide-slate-100">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ==================== TAB 4: TRANSACTIONS (INCOME & EXPENSE) ==================== -->
+        <div id="view-transactions" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Add Income/Expense Form -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm h-fit">
+                    <h3 class="font-bold text-lg text-slate-900 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-file-circle-plus text-sky-600"></i> নতুন আয় / ব্যয় যোগ করুন
+                    </h3>
+                    <form id="transactionForm" onsubmit="handleAddTransaction(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">টাইপ</label>
+                            <select id="txType" onchange="updateCategoryDropdown(this.value)" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+                                <option value="Expense">ব্যয় (Expense)</option>
+                                <option value="Income">আয় (Income)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">অ্যাকোউন্ট (কোন ক্যাশ/ব্যাংক থেকে?)</label>
+                            <select id="txAccount" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">বিবরণ / খাত</label>
+                            <input type="text" id="txTitle" required placeholder="যেমন: বাসা ভাড়া, বেতন, বাজার..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">পরিমাণ (৳)</label>
+                            <input type="number" id="txAmount" min="0.01" step="any" required placeholder="0.00" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">ক্যাটাগরি</label>
+                            <select id="txCategory" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">তারিখ</label>
+                            <input type="date" id="txDate" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none">
+                        </div>
+
+                        <button type="submit" class="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-medium rounded-xl text-sm shadow-md transition">
+                            লেনদেন যোগ করুন
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Transactions History Table -->
+                <div class="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                        <h3 class="font-bold text-lg text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-receipt text-slate-600"></i> সকল আয় ও ব্যয়ের ইতিহাস
+                        </h3>
+                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                            <input type="text" id="txSearch" onkeyup="renderTransactionsTable()" placeholder="খুঁজুন..." class="px-3 py-1.5 text-xs border border-slate-300 rounded-lg w-full sm:w-36 outline-none">
+                            <select id="txFilterType" onchange="renderTransactionsTable()" class="px-3 py-1.5 text-xs border border-slate-300 rounded-lg outline-none">
+                                <option value="All">সকল</option>
+                                <option value="Expense">ব্যয়</option>
+                                <option value="Income">আয়</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto flex-1">
+                        <table class="w-full text-left text-xs text-slate-600">
+                            <thead class="bg-slate-50 text-slate-700 font-semibold uppercase border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3">তারিখ</th>
+                                    <th class="p-3">বিবরণ ও ক্যাটাগরি</th>
+                                    <th class="p-3">অ্যাকোউন্ট</th>
+                                    <th class="p-3 text-right">পরিমাণ</th>
+                                    <th class="p-3 text-center">একশন</th>
+                                </tr>
+                            </thead>
+                            <tbody id="txTableBody" class="divide-y divide-slate-100">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ==================== TAB 5: ASSETS & LIABILITIES ==================== -->
+        <div id="view-assets" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- Fixed Assets Section -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+                    <div class="flex justify-between items-center border-b pb-3">
+                        <h3 class="font-bold text-lg text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-gem text-teal-600"></i> স্থায়ী সম্পদ (Fixed Assets)
+                        </h3>
+                        <span id="asset-total-badge" class="font-bold text-teal-600 text-sm">৳ 0</span>
+                    </div>
+
+                    <form onsubmit="handleAddAsset(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <input type="text" id="assetName" placeholder="সম্পদের নাম (যেমন: সোনা, জমি)" required class="px-3 py-2 text-xs border rounded-xl outline-none">
+                        <input type="number" id="assetAmount" placeholder="মূল্য (৳)" required class="px-3 py-2 text-xs border rounded-xl outline-none">
+                        <button type="submit" class="bg-teal-600 text-white font-medium py-2 px-3 rounded-xl text-xs hover:bg-teal-700">যোগ করুন</button>
+                    </form>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-600">
+                            <thead class="bg-slate-50 border-b">
+                                <tr>
+                                    <th class="p-2">সম্পদ</th>
+                                    <th class="p-2 text-right">মূল্য</th>
+                                    <th class="p-2 text-center">মুছুন</th>
+                                </tr>
+                            </thead>
+                            <tbody id="assetsTableBody" class="divide-y divide-slate-100">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Liabilities Section -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+                    <div class="flex justify-between items-center border-b pb-3">
+                        <h3 class="font-bold text-lg text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-hand-holding-dollar text-rose-600"></i> দায় ও ঋণ (Liabilities)
+                        </h3>
+                        <span id="liability-total-badge" class="font-bold text-rose-600 text-sm">৳ 0</span>
+                    </div>
+
+                    <form onsubmit="handleAddLiability(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <input type="text" id="liabilityName" placeholder="দায়ের নাম (যেমন: লোন, ক্রেডিট কার্ড)" required class="px-3 py-2 text-xs border rounded-xl outline-none">
+                        <input type="number" id="liabilityAmount" placeholder="পরিমাণ (৳)" required class="px-3 py-2 text-xs border rounded-xl outline-none">
+                        <button type="submit" class="bg-rose-600 text-white font-medium py-2 px-3 rounded-xl text-xs hover:bg-rose-700">যোগ করুন</button>
+                    </form>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-600">
+                            <thead class="bg-slate-50 border-b">
+                                <tr>
+                                    <th class="p-2">দায় / ঋণ</th>
+                                    <th class="p-2 text-right">পরিমাণ</th>
+                                    <th class="p-2 text-center">মুছুন</th>
+                                </tr>
+                            </thead>
+                            <tbody id="liabilitiesTableBody" class="divide-y divide-slate-100">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Master Categories
+        const expenseCategories = ['বাসা ভাড়া ও বিল', 'খাবার ও বাজার', 'পরিবহন ও ফুয়েল', 'চিকিৎসা ও ওষুধ', 'শিক্ষা', 'বিনোদন ও কেনাকাটা', 'অন্যান্য'];
+        const incomeCategories = ['মাসিক বেতন', 'ফ্রিল্যান্সিং / ব্যবসা', 'ডিভিডেন্ড / বিনিয়োগ', 'উপহার / অন্যান্য'];
+
+        // Initial Default Seed Data
+        const defaultState = {
+            accounts: [
+                { id: 'acc1', name: 'পকেট ক্যাশ (হাতে নগদ)', type: 'Cash', initialBalance: 8500 },
+                { id: 'acc2', name: 'ডাচ-বাংলা ব্যাংক', type: 'Bank', initialBalance: 65000 },
+                { id: 'acc3', name: 'বিকাশ (bKash)', type: 'Mobile', initialBalance: 12000 }
+            ],
+            transactions: [
+                { id: 't1', type: 'Income', title: 'মাসিক বেতন', amount: 75000, category: 'মাসিক বেতন', accountId: 'acc2', date: '2026-09-01' },
+                { id: 't2', type: 'Expense', title: 'মাসিক বাজার খরচ', amount: 12000, category: 'খাবার ও বাজার', accountId: 'acc1', date: '2026-09-05' }
+            ],
+            transfers: [
+                { id: 'tr1', fromAccountId: 'acc2', toAccountId: 'acc1', amount: 10000, note: 'এটিএম (ATM) থেকে ক্যাশ উত্তোলন', date: '2026-09-02' }
+            ],
+            assets: [
+                { id: 'ast1', name: 'স্বর্ণালংকার', amount: 150000 },
+                { id: 'ast2', name: 'ডিপিএস সঞ্চয়', amount: 80000 }
+            ],
+            liabilities: [
+                { id: 'lib1', name: 'ক্রেডিট কার্ড বিল', amount: 15000 }
+            ]
+        };
+
+        let appData = { ...defaultState };
+
+        let barChartInstance = null;
+        let pieChartInstance = null;
+
+        // Utility: Format Taka
+        function formatTaka(amount) {
+            return '৳ ' + Number(amount || 0).toLocaleString('bn-BD', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+        }
+
+        // Initialize App
+        window.onload = function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('txDate').value = today;
+            document.getElementById('transferDate').value = today;
+            
+            loadSavedData();
+            renderAllViews();
+        };
+
+        // Local Storage Operations
+        function loadSavedData() {
+            const saved = localStorage.getItem('bn_finance_tracker_v3');
+            if (saved) {
+                try {
+                    appData = JSON.parse(saved);
+                    if (!appData.transfers) appData.transfers = [];
+                } catch (e) {
+                    console.error("Error loading data", e);
+                }
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('bn_finance_tracker_v3', JSON.stringify(appData));
+            renderAllViews();
+        }
+
+        // Switch Navigation Tabs
+        function switchTab(tabName) {
+            ['overview', 'transfer', 'accounts', 'transactions', 'assets'].forEach(t => {
+                document.getElementById(`view-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).classList.remove('active');
+            });
+
+            document.getElementById(`view-${tabName}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+
+            if (tabName === 'overview') {
+                renderCharts();
+            }
+        }
+
+        function updateCategoryDropdown(type) {
+            const select = document.getElementById('txCategory');
+            select.innerHTML = '';
+            const list = type === 'Expense' ? expenseCategories : incomeCategories;
+            list.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.textContent = c;
+                select.appendChild(opt);
+            });
+        }
+
+        // Calculate Realtime Account Balances
+        function getAccountBalances() {
+            const balances = {};
+            appData.accounts.forEach(acc => {
+                balances[acc.id] = acc.initialBalance || 0;
+            });
+
+            // Calculate Income/Expense
+            appData.transactions.forEach(tx => {
+                if (tx.type === 'Income' && balances[tx.accountId] !== undefined) {
+                    balances[tx.accountId] += tx.amount;
+                } else if (tx.type === 'Expense' && balances[tx.accountId] !== undefined) {
+                    balances[tx.accountId] -= tx.amount;
+                }
+            });
+
+            // Calculate Explicit Transfers
+            (appData.transfers || []).forEach(tr => {
+                if (balances[tr.fromAccountId] !== undefined) {
+                    balances[tr.fromAccountId] -= tr.amount;
+                }
+                if (balances[tr.toAccountId] !== undefined) {
+                    balances[tr.toAccountId] += tr.amount;
+                }
+            });
+
+            return balances;
+        }
+
+        // Explicit Fund Transfer Handler
+        function handleFundTransfer(e) {
+            e.preventDefault();
+            const fromAccountId = document.getElementById('transferFromAcc').value;
+            const toAccountId = document.getElementById('transferToAcc').value;
+            const amount = parseFloat(document.getElementById('transferAmount').value);
+            const date = document.getElementById('transferDate').value;
+            const note = document.getElementById('transferNote').value.trim();
+
+            if (fromAccountId === toAccountId) {
+                alert('উৎস এবং গন্তব্য অ্যাকাউন্ট একই হতে পারবে না!');
+                return;
+            }
+
+            if (isNaN(amount) || amount <= 0) {
+                alert('সঠিক টাকার পরিমাণ দিন!');
+                return;
+            }
+
+            appData.transfers.unshift({
+                id: Date.now().toString(),
+                fromAccountId,
+                toAccountId,
+                amount,
+                date,
+                note: note || 'ফান্ড ট্রান্সফার'
+            });
+
+            saveData();
+            document.getElementById('transferAmount').value = '';
+            document.getElementById('transferNote').value = '';
+            alert('ফান্ড ট্রান্সফার সফলভাবে নথিভুক্ত হয়েছে!');
+        }
+
+        function deleteTransfer(id) {
+            appData.transfers = appData.transfers.filter(tr => tr.id !== id);
+            saveData();
+        }
+
+        // Accounts Handlers
+        function handleAddAccount(e) {
+            e.preventDefault();
+            const name = document.getElementById('accName').value.trim();
+            const type = document.getElementById('accType').value;
+            const initialBalance = parseFloat(document.getElementById('accBalance').value) || 0;
+
+            if (!name) return;
+
+            appData.accounts.push({ id: Date.now().toString(), name, type, initialBalance });
+            saveData();
+
+            document.getElementById('accName').value = '';
+            document.getElementById('accBalance').value = '';
+        }
+
+        function deleteAccount(id) {
+            appData.accounts = appData.accounts.filter(a => a.id !== id);
+            saveData();
+        }
+
+        // Income/Expense Handlers
+        function handleAddTransaction(e) {
+            e.preventDefault();
+            const type = document.getElementById('txType').value;
+            const title = document.getElementById('txTitle').value.trim();
+            const amount = parseFloat(document.getElementById('txAmount').value);
+            const date = document.getElementById('txDate').value;
+            const accountId = document.getElementById('txAccount').value;
+            const category = document.getElementById('txCategory').value;
+
+            if (!title || isNaN(amount) || amount <= 0) return;
+
+            appData.transactions.unshift({ id: Date.now().toString(), type, title, amount, category, accountId, date });
+
+            saveData();
+            document.getElementById('txTitle').value = '';
+            document.getElementById('txAmount').value = '';
+        }
+
+        function deleteTransaction(id) {
+            appData.transactions = appData.transactions.filter(t => t.id !== id);
+            saveData();
+        }
+
+        // Asset/Liability Handlers
+        function handleAddAsset(e) {
+            e.preventDefault();
+            const name = document.getElementById('assetName').value.trim();
+            const amount = parseFloat(document.getElementById('assetAmount').value);
+            if (!name || isNaN(amount)) return;
+            appData.assets.push({ id: Date.now().toString(), name, amount });
+            saveData();
+            document.getElementById('assetName').value = '';
+            document.getElementById('assetAmount').value = '';
+        }
+
+        function deleteAsset(id) {
+            appData.assets = appData.assets.filter(a => a.id !== id);
+            saveData();
+        }
+
+        function handleAddLiability(e) {
+            e.preventDefault();
+            const name = document.getElementById('liabilityName').value.trim();
+            const amount = parseFloat(document.getElementById('liabilityAmount').value);
+            if (!name || isNaN(amount)) return;
+            appData.liabilities.push({ id: Date.now().toString(), name, amount });
+            saveData();
+            document.getElementById('liabilityName').value = '';
+            document.getElementById('liabilityAmount').value = '';
+        }
+
+        function deleteLiability(id) {
+            appData.liabilities = appData.liabilities.filter(l => l.id !== id);
+            saveData();
+        }
+
+        // Main Rendering Logic
+        function renderAllViews() {
+            const balances = getAccountBalances();
+
+            let bankTotal = 0;
+            let cashTotal = 0;
+
+            appData.accounts.forEach(acc => {
+                const bal = balances[acc.id] || 0;
+                if (acc.type === 'Bank') bankTotal += bal;
+                else cashTotal += bal; // Mobile wallet is included in cash/liquid
+            });
+
+            const liquidTotal = bankTotal + cashTotal;
+            const fixedAssetsTotal = appData.assets.reduce((sum, a) => sum + a.amount, 0);
+            const totalLiabilities = appData.liabilities.reduce((sum, l) => sum + l.amount, 0);
+            const totalAssets = liquidTotal + fixedAssetsTotal;
+            const netWorth = totalAssets - totalLiabilities;
+
+            // Update Top Overview Cards
+            document.getElementById('stat-cash').textContent = formatTaka(cashTotal);
+            document.getElementById('stat-bank').textContent = formatTaka(bankTotal);
+            document.getElementById('stat-liquid').textContent = formatTaka(liquidTotal);
+            document.getElementById('stat-assets').textContent = formatTaka(fixedAssetsTotal);
+            document.getElementById('stat-liabilities').textContent = formatTaka(totalLiabilities);
+            document.getElementById('stat-networth').textContent = formatTaka(netWorth);
+
+            document.getElementById('asset-total-badge').textContent = formatTaka(fixedAssetsTotal);
+            document.getElementById('liability-total-badge').textContent = formatTaka(totalLiabilities);
+
+            // Populate Dropdowns
+            populateAccountDropdowns();
+            updateCategoryDropdown(document.getElementById('txType').value);
+
+            // Render Tables & Lists
+            renderAccountsTable(balances);
+            renderQuickAccountsGrid(balances);
+            renderTransactionsTable();
+            renderTransferHistory();
+            renderAssetsTable();
+            renderLiabilitiesTable();
+
+            // Render Charts
+            renderCharts();
+        }
+
+        function populateAccountDropdowns() {
+            const txSelect = document.getElementById('txAccount');
+            const fromSelect = document.getElementById('transferFromAcc');
+            const toSelect = document.getElementById('transferToAcc');
+
+            const optionsHTML = appData.accounts.map(a => `<option value="${a.id}">${a.name} (${a.type === 'Cash' ? 'নগদ' : (a.type === 'Bank' ? 'ব্যাংক' : 'মোবাইল')})</option>`).join('');
+
+            txSelect.innerHTML = optionsHTML;
+            fromSelect.innerHTML = optionsHTML;
+            toSelect.innerHTML = optionsHTML;
+
+            if (appData.accounts.length > 1) {
+                toSelect.selectedIndex = 1;
+            }
+        }
+
+        function renderQuickAccountsGrid(balances) {
+            const grid = document.getElementById('quick-accounts-grid');
+            if (appData.accounts.length === 0) {
+                grid.innerHTML = `<p class="text-xs text-slate-400">কোনো অ্যাকাউন্ট যুক্ত নেই</p>`;
+                return;
+            }
+            grid.innerHTML = appData.accounts.map(acc => `
+                <div class="p-3 bg-slate-50 border rounded-xl flex justify-between items-center">
+                    <div>
+                        <p class="text-xs font-bold text-slate-800">${acc.name}</p>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded font-semibold ${acc.type === 'Cash' ? 'bg-amber-100 text-amber-800' : 'bg-sky-100 text-sky-800'}">${acc.type === 'Cash' ? 'নগদ ক্যাশ' : (acc.type === 'Bank' ? 'ব্যাংক' : 'মোবাইল')}</span>
+                    </div>
+                    <span class="text-sm font-bold ${balances[acc.id] < 0 ? 'text-rose-600' : 'text-emerald-600'}">${formatTaka(balances[acc.id])}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderAccountsTable(balances) {
+            const tbody = document.getElementById('accountsTableBody');
+            if (appData.accounts.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-3 text-center text-slate-400">কোনো ব্যাংক বা ক্যাশ অ্যাকাউন্ট যুক্ত নেই</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = appData.accounts.map(acc => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${acc.type === 'Cash' ? 'bg-amber-100 text-amber-800' : 'bg-sky-100 text-sky-800'}">${acc.type === 'Cash' ? 'নগদ' : (acc.type === 'Bank' ? 'ব্যাংক' : 'মোবাইল')}</span></td>
+                    <td class="p-3 font-semibold text-slate-800">${acc.name}</td>
+                    <td class="p-3 text-right font-bold text-emerald-600">${formatTaka(balances[acc.id])}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="deleteAccount('${acc.id}')" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderTransactionsTable() {
+            const tbody = document.getElementById('txTableBody');
+            const search = document.getElementById('txSearch').value.toLowerCase();
+            const filter = document.getElementById('txFilterType').value;
+
+            const accMap = {};
+            appData.accounts.forEach(a => accMap[a.id] = a.name);
+
+            const filtered = appData.transactions.filter(t => {
+                const matchesSearch = t.title.toLowerCase().includes(search) || (t.category && t.category.toLowerCase().includes(search));
+                const matchesType = filter === 'All' || t.type === filter;
+                return matchesSearch && matchesType;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-slate-400">কোনো আয়/ব্যয় পাওয়া যায়নি</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(t => {
+                const isIncome = t.type === 'Income';
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3 text-slate-500 whitespace-nowrap">${t.date}</td>
+                        <td class="p-3">
+                            <p class="font-semibold text-slate-800">${t.title}</p>
+                            <span class="px-2 py-0.5 rounded text-[10px] ${isIncome ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'} font-medium">${t.category}</span>
+                        </td>
+                        <td class="p-3 font-medium text-slate-600">${accMap[t.accountId] || 'অজানা'}</td>
+                        <td class="p-3 text-right font-bold ${isIncome ? 'text-emerald-600' : 'text-rose-600'}">${isIncome ? '+' : '-'} ${formatTaka(t.amount)}</td>
+                        <td class="p-3 text-center">
+                            <button onclick="deleteTransaction('${t.id}')" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderTransferHistory() {
+            const tbody = document.getElementById('transferHistoryBody');
+            const accMap = {};
+            appData.accounts.forEach(a => accMap[a.id] = a.name);
+
+            if (!appData.transfers || appData.transfers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-slate-400">কোনো ট্রান্সফারের ইতিহাস পাওয়া যায়নি</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = appData.transfers.map(tr => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-2.5 text-slate-500 whitespace-nowrap">${tr.date}</td>
+                    <td class="p-2.5 font-bold text-slate-800">
+                        ${accMap[tr.fromAccountId] || 'N/A'} 
+                        <i class="fa-solid fa-arrow-right text-amber-500 mx-1"></i> 
+                        ${accMap[tr.toAccountId] || 'N/A'}
+                    </td>
+                    <td class="p-2.5 text-slate-600">${tr.note || '-'}</td>
+                    <td class="p-2.5 text-right font-bold text-amber-600">${formatTaka(tr.amount)}</td>
+                    <td class="p-2.5 text-center">
+                        <button onclick="deleteTransfer('${tr.id}')" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderAssetsTable() {
+            const tbody = document.getElementById('assetsTableBody');
+            if (appData.assets.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="p-2 text-center text-slate-400">কোনো তথ্য নেই</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = appData.assets.map(a => `
+                <tr>
+                    <td class="p-2 font-medium">${a.name}</td>
+                    <td class="p-2 text-right font-bold text-teal-600">${formatTaka(a.amount)}</td>
+                    <td class="p-2 text-center"><button onclick="deleteAsset('${a.id}')" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button></td>
+                </tr>
+            `).join('');
+        }
+
+        function renderLiabilitiesTable() {
+            const tbody = document.getElementById('liabilitiesTableBody');
+            if (appData.liabilities.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="p-2 text-center text-slate-400">কোনো তথ্য নেই</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = appData.liabilities.map(l => `
+                <tr>
+                    <td class="p-2 font-medium">${l.name}</td>
+                    <td class="p-2 text-right font-bold text-rose-600">${formatTaka(l.amount)}</td>
+                    <td class="p-2 text-center"><button onclick="deleteLiability('${l.id}')" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button></td>
+                </tr>
+            `).join('');
+        }
+
+        // Render Chart.js Analytics
+        function renderCharts() {
+            let totalIncome = 0;
+            let totalExpense = 0;
+            const expenseByCat = {};
+
+            appData.transactions.forEach(t => {
+                if (t.type === 'Income') totalIncome += t.amount;
+                if (t.type === 'Expense') {
+                    totalExpense += t.amount;
+                    expenseByCat[t.category] = (expenseByCat[t.category] || 0) + t.amount;
+                }
+            });
+
+            // 1. Bar Chart
+            const barCtx = document.getElementById('incomeExpenseChart').getContext('2d');
+            if (barChartInstance) barChartInstance.destroy();
+
+            barChartInstance = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['মোট আয়', 'মোট ব্যয়', 'মাসিক উদ্বৃত্ত'],
+                    datasets: [{
+                        data: [totalIncome, totalExpense, Math.max(0, totalIncome - totalExpense)],
+                        backgroundColor: ['#10b981', '#f43f5e', '#0284c7'],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            // 2. Pie Chart
+            const pieCtx = document.getElementById('expenseCategoryChart').getContext('2d');
+            if (pieChartInstance) pieChartInstance.destroy();
+
+            const pieLabels = Object.keys(expenseByCat);
+            const pieValues = Object.values(expenseByCat);
+
+            pieChartInstance = new Chart(pieCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: pieLabels.length ? pieLabels : ['কোনো খরচ নেই'],
+                    datasets: [{
+                        data: pieValues.length ? pieValues : [1],
+                        backgroundColor: ['#0284c7', '#f43f5e', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#64748b']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }
+                }
+            });
+        }
+
+        // JSON Data Operations
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+            const anchor = document.createElement('a');
+            anchor.setAttribute("href", dataStr);
+            anchor.setAttribute("download", `Finance_Backup_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+        }
+
+        function importData(event) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed && parsed.accounts) {
+                        appData = parsed;
+                        saveData();
+                        alert('ডাটা সফলভাবে লোড করা হয়েছে!');
+                    } else {
+                        alert('অবৈধ ব্যাকআপ ফাইল!');
+                    }
+                } catch (err) {
+                    alert('ফাইলটি পড়তে ব্যর্থ হয়েছে!');
+                }
+            };
+            if (event.target.files[0]) {
+                reader.readAsText(event.target.files[0]);
+            }
+        }
+
+        function confirmReset() {
+            if (confirm("আপনি কি নিশ্চিত যে সকল ডাটামোছে ডিফল্ট সেটিংসে ফেরত যেতে চান?")) {
+                appData = JSON.parse(JSON.stringify(defaultState));
+                saveData();
+            }
+        }
+    </script>
+</body>
+</html>
