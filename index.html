@@ -9,13 +9,11 @@
     <style>
         body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         .card { border-radius: 12px; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .bg-gradient-primary { background: linear-gradient(45deg, #4e73df, #224abe); color: white; }
         .bg-gradient-success { background: linear-gradient(45deg, #1cc88a, #13855c); color: white; }
         .bg-gradient-danger { background: linear-gradient(45deg, #e74a3b, #be2617); color: white; }
         .bg-gradient-warning { background: linear-gradient(45deg, #f6c23e, #dda20a); color: white; }
         .bg-gradient-info { background: linear-gradient(45deg, #36b9cc, #258391); color: white; }
-        .bg-gradient-pink { background: linear-gradient(45deg, #e83e8c, #b01860); color: white; }
-        .nav-pills .nav-link.active { background-color: #4e73df; }
+        .nav-pills .nav-link.active { background-color: #0d6efd; color: white; }
         #lockScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1c23; z-index: 9999; display: flex; align-items: center; justify-content: center; }
         @media print {
             .no-print { display: none !important; }
@@ -39,12 +37,64 @@
         </div>
     </div>
 
+    <!-- Edit Transaction Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">লেনদেন এডিট করুন</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editForm">
+                        <input type="hidden" id="editTxId">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">তারিখ</label>
+                            <input type="date" id="editTxDate" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">লেনদেনের ধরণ</label>
+                            <select id="editTxType" class="form-select" required>
+                                <option value="income">আয় (Income)</option>
+                                <option value="expense">ব্যয় (Expense)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">অ্যাকাউন্ট</label>
+                            <select id="editTxAccount" class="form-select" required>
+                                <option value="cash">নগদ টাকা (Cash)</option>
+                                <option value="bkash">বিকাশ (bKash)</option>
+                                <option value="islamic_bank">ইসলামী ব্যাংক</option>
+                                <option value="brac_bank">ব্র্যাক ব্যাংক</option>
+                                <option value="dbbl">ডাচ-বাংলা ব্যাংক</option>
+                                <option value="dhaka_bank">ঢাকা ব্যাংক</option>
+                                <option value="other_bank">অন্যান্য ব্যাংক</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">পরিমাণ (৳)</label>
+                            <input type="number" id="editTxAmount" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">বিবরণ / নোট</label>
+                            <input type="text" id="editTxNote" class="form-control">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">বাতিল</button>
+                    <button type="button" class="btn btn-primary" onclick="saveEditedTx()">আপডেট করুন</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Application Container -->
     <div class="container py-4" id="appContent" style="display:none;">
         
         <!-- Header Nav -->
         <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom no-print">
-            <h3 class="fw-bold text-primary mb-0"><i class="fas fa-wallet me-2"></i>ফিন্যান্স ট্র্যাকার</h3>
+            <h3 class="fw-bold text-primary mb-0"><i class="fas fa-wallet me-2"></i>পার্সোনাল ফিন্যান্স ট্র্যাকার</h3>
             <div>
                 <button class="btn btn-sm btn-outline-secondary me-2" onclick="lockApp()"><i class="fas fa-lock me-1"></i>লক করুন</button>
                 <button class="btn btn-sm btn-outline-danger" onclick="resetPin()"><i class="fas fa-key me-1"></i>পাসওয়ার্ড চেঞ্জ</button>
@@ -54,10 +104,13 @@
         <!-- Navigation Tabs -->
         <ul class="nav nav-pills mb-4 no-print" id="pills-tab" role="tablist">
             <li class="nav-item">
-                <button class="nav-link active fw-bold" id="pills-dashboard-tab" data-bs-toggle="pill" data-bs-target="#pills-dashboard"><i class="fas fa-home me-1"></i> ড্যাশবোর্ড</button>
+                <button class="nav-link active fw-bold" id="pills-dashboard-tab" data-bs-toggle="pill" data-bs-target="#pills-dashboard"><i class="fas fa-chart-pie me-1"></i> ওভারভিউ</button>
             </li>
             <li class="nav-item">
-                <button class="nav-link fw-bold" id="pills-entry-tab" data-bs-toggle="pill" data-bs-target="#pills-entry"><i class="fas fa-plus-circle me-1"></i> লেনদেন এন্ট্রি</button>
+                <button class="nav-link fw-bold" id="pills-entry-tab" data-bs-toggle="pill" data-bs-target="#pills-entry"><i class="fas fa-list-alt me-1"></i> আয় ও ব্যয়</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link fw-bold" id="pills-assets-tab" data-bs-toggle="pill" data-bs-target="#pills-assets"><i class="fas fa-gem me-1"></i> সম্পদ ও দায়</button>
             </li>
             <li class="nav-item">
                 <button class="nav-link fw-bold" id="pills-report-tab" data-bs-toggle="pill" data-bs-target="#pills-report" onclick="generateReport()"><i class="fas fa-file-invoice-dollar me-1"></i> রিপোর্ট ও প্রিন্ট</button>
@@ -108,7 +161,7 @@
                         <div class="card p-3 border-start border-primary border-4">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <small class="text-muted">ব্যাংক ব্যালেন্স</small>
+                                    <small class="text-muted">মোট ব্যাংক ব্যালেন্স</small>
                                     <h3 class="fw-bold text-primary mb-0" id="bankBalance">৳ 0</h3>
                                 </div>
                                 <i class="fas fa-university fa-2x text-primary opacity-50"></i>
@@ -148,7 +201,6 @@
                                 <tr>
                                     <th>তারিখ</th>
                                     <th>টাইপ</th>
-                                    <th>ক্যাটাগরি</th>
                                     <th>অ্যাকাউন্ট</th>
                                     <th>বিবরণ</th>
                                     <th class="text-end">পরিমাণ</th>
@@ -161,12 +213,12 @@
                 </div>
             </div>
 
-            <!-- Transaction Entry Tab -->
+            <!-- Transaction Entry Tab (Income / Expense / Transfer) -->
             <div class="tab-pane fade" id="pills-entry">
                 <div class="row justify-content-center">
                     <div class="col-md-8">
                         <div class="card p-4">
-                            <h4 class="fw-bold mb-4 text-center text-primary">নতুন হিসাব যোগ করুন</h4>
+                            <h4 class="fw-bold mb-4 text-center text-primary">আয় ও ব্যয় এন্ট্রি করুন</h4>
                             <form id="txForm" onsubmit="addTransaction(event)">
                                 <div class="row g-3">
                                     <div class="col-md-6">
@@ -178,9 +230,7 @@
                                         <select id="txType" class="form-select" onchange="updateAccountOptions()" required>
                                             <option value="income">আয় (Income)</option>
                                             <option value="expense">ব্যয় (Expense)</option>
-                                            <option value="asset">সম্পদ (Asset Purchase)</option>
-                                            <option value="liability">দায়/ঋণ (Liability)</option>
-                                            <option value="transfer">ফান্ড ট্রান্সফার</option>
+                                            <option value="transfer">ফান্ড ট্রান্সফার (ক্যাশ ⇄ ব্যাংক)</option>
                                         </select>
                                     </div>
                                     <div class="col-md-6">
@@ -188,15 +238,27 @@
                                         <select id="txAccount" class="form-select" required>
                                             <option value="cash">নগদ টাকা (Cash)</option>
                                             <option value="bkash">বিকাশ (bKash)</option>
-                                            <option value="bank">ব্যাংক (Bank)</option>
+                                            <optgroup label="ব্যাংক হিসাব">
+                                                <option value="islamic_bank">ইসলামী ব্যাংক</option>
+                                                <option value="brac_bank">ব্র্যাক ব্যাংক</option>
+                                                <option value="dbbl">ডাচ-বাংলা ব্যাংক</option>
+                                                <option value="dhaka_bank">ঢাকা ব্যাংক</option>
+                                                <option value="other_bank">অন্যান্য ব্যাংক</option>
+                                            </optgroup>
                                         </select>
                                     </div>
                                     <div class="col-md-6" id="transferToDiv" style="display:none;">
                                         <label class="form-label fw-bold">কোথায় পাঠাচ্ছেন?</label>
                                         <select id="txAccountTo" class="form-select">
-                                            <option value="bank">ব্যাংক (Bank)</option>
-                                            <option value="bkash">বিকাশ (bKash)</option>
                                             <option value="cash">নগদ টাকা (Cash)</option>
+                                            <option value="bkash">বিকাশ (bKash)</option>
+                                            <optgroup label="ব্যাংক হিসাব">
+                                                <option value="islamic_bank">ইসলামী ব্যাংক</option>
+                                                <option value="brac_bank">ব্র্যাক ব্যাংক</option>
+                                                <option value="dbbl">ডাচ-বাংলা ব্যাংক</option>
+                                                <option value="dhaka_bank">ঢাকা ব্যাংক</option>
+                                                <option value="other_bank">অন্যান্য ব্যাংক</option>
+                                            </optgroup>
                                         </select>
                                     </div>
                                     <div class="col-md-6">
@@ -205,13 +267,88 @@
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label fw-bold">বিবরণ / নোট</label>
-                                        <input type="text" id="txNote" class="form-control" placeholder="যেমন: বেতন, বাজার খরচ, ল্যাপটপ ক্রয় ইত্যাদি">
+                                        <input type="text" id="txNote" class="form-control" placeholder="যেমন: বেতন, বাজার খরচ ইত্যাদি">
                                     </div>
                                     <div class="col-12 mt-4">
                                         <button type="submit" class="btn btn-primary w-100 fw-bold py-2">এন্ট্রি সেভ করুন</button>
                                     </div>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assets & Liabilities Dedicated Tab -->
+            <div class="tab-pane fade" id="pills-assets">
+                <div class="row g-4">
+                    <!-- Fixed Assets Card -->
+                    <div class="col-md-6">
+                        <div class="card p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="fw-bold text-success mb-0"><i class="fas fa-gem me-2"></i>স্থায়ী সম্পদ (Fixed Assets)</h5>
+                                <h5 class="fw-bold text-success mb-0" id="assetCardTotal">৳ 0</h5>
+                            </div>
+                            <form onsubmit="addAsset(event)" class="mb-3">
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <input type="text" id="assetName" class="form-control" placeholder="সম্পদের নাম (যেমন: সোনা, জমি)" required>
+                                    </div>
+                                    <div class="col-3">
+                                        <input type="number" id="assetValue" class="form-control" placeholder="মূল্য (৳)" required>
+                                    </div>
+                                    <div class="col-3">
+                                        <button type="submit" class="btn btn-teal text-white w-100 fw-bold" style="background-color: #0d9488;">যোগ করুন</button>
+                                    </div>
+                                </div>
+                            </form>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>সম্পদ</th>
+                                            <th class="text-end">মূল্য</th>
+                                            <th class="text-center">মুছুন</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="assetListTable"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Liabilities Card -->
+                    <div class="col-md-6">
+                        <div class="card p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="fw-bold text-danger mb-0"><i class="fas fa-hand-holding-usd me-2"></i>দায় ও ঋণ (Liabilities)</h5>
+                                <h5 class="fw-bold text-danger mb-0" id="liabilityCardTotal">৳ 0</h5>
+                            </div>
+                            <form onsubmit="addLiability(event)" class="mb-3">
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <input type="text" id="liabilityName" class="form-control" placeholder="দায়ের নাম (যেমন: লোন, নাম)" required>
+                                    </div>
+                                    <div class="col-3">
+                                        <input type="number" id="liabilityValue" class="form-control" placeholder="পরিমাণ (৳)" required>
+                                    </div>
+                                    <div class="col-3">
+                                        <button type="submit" class="btn btn-danger w-100 fw-bold">যোগ করুন</button>
+                                    </div>
+                                </div>
+                            </form>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>দায় / ঋণ</th>
+                                            <th class="text-end">পরিমাণ</th>
+                                            <th class="text-center">মুছুন</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="liabilityListTable"></tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -225,7 +362,6 @@
                         <button class="btn btn-success fw-bold" onclick="window.print()"><i class="fas fa-print me-1"></i> রিপোর্ট প্রিন্ট / PDF</button>
                     </div>
 
-                    <!-- Filter Controls -->
                     <div class="row g-3 mb-4 no-print bg-light p-3 rounded">
                         <div class="col-md-4">
                             <label class="form-label fw-bold">মাস অনুযায়ী রিপোর্ট</label>
@@ -233,7 +369,6 @@
                         </div>
                     </div>
 
-                    <!-- Printable Report Area -->
                     <div id="printArea">
                         <div class="text-center mb-4">
                             <h2 class="fw-bold">ব্যক্তিগত আয়-ব্যয় রিপোর্ট</h2>
@@ -290,7 +425,7 @@
                     <div class="col-md-8">
                         <div class="card p-4 mb-4">
                             <h4 class="fw-bold mb-3 text-primary"><i class="fas fa-download me-2"></i>ডাটা ব্যাকআপ ও লোড</h4>
-                            <p class="text-muted small">আপনার ডাটা সুরক্ষার জন্য নিয়মিত ব্যাকআপ ডাউনলোড করে রাখুন। অন্য ডিভাইসে চালাতে সেই ব্যাকআপ ফাইলটি লোড করুন।</p>
+                            <p class="text-muted small">আপনার ডাটা সুরক্ষার জন্য নিয়মিত ব্যাকআপ ডাউনলোড করে রাখুন।</p>
                             <div class="d-flex gap-3">
                                 <button class="btn btn-outline-primary fw-bold w-50 py-2" onclick="exportData()"><i class="fas fa-file-export me-1"></i> ব্যাকআপ ডাউনলোড (JSON)</button>
                                 <label class="btn btn-outline-success fw-bold w-50 py-2 mb-0">
@@ -311,27 +446,36 @@
         </div>
     </div>
 
-    <!-- Bootstrap & App Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let appData = {
-            transactions: [],
-            pin: "1234"
+        let appData = { transactions: [], assets: [], liabilities: [], pin: "1234" };
+        let editModalObj = null;
+
+        const accLabels = {
+            cash: 'নগদ (Cash)',
+            bkash: 'বিকাশ (bKash)',
+            islamic_bank: 'ইসলামী ব্যাংক',
+            brac_bank: 'ব্র্যাক ব্যাংক',
+            dbbl: 'ডাচ-বাংলা ব্যাংক',
+            dhaka_bank: 'ঢাকা ব্যাংক',
+            other_bank: 'অন্যান্য ব্যাংক'
         };
 
-        // Initialize App
         window.onload = function() {
             let savedData = localStorage.getItem('myfinance_data');
             if (savedData) {
                 appData = JSON.parse(savedData);
+                if (!appData.assets) appData.assets = [];
+                if (!appData.liabilities) appData.liabilities = [];
             } else {
                 localStorage.setItem('myfinance_data', JSON.stringify(appData));
             }
+            
             document.getElementById('txDate').valueAsDate = new Date();
             document.getElementById('reportMonth').value = new Date().toISOString().slice(0, 7);
+            editModalObj = new bootstrap.Modal(document.getElementById('editModal'));
         };
 
-        // Check PIN
         function checkPin() {
             let input = document.getElementById('pinInput').value;
             if (input === appData.pin) {
@@ -355,20 +499,17 @@
             if (newPin && newPin.trim().length >= 4) {
                 appData.pin = newPin.trim();
                 saveData();
-                alert("পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে!");
-            } else if (newPin) {
-                alert("পাসওয়ার্ড সর্বনিম্ন ৪ ডিজিটের হতে হবে!");
+                alert("পাসওয়ার্ড পরিবর্তন হয়েছে!");
             }
         }
 
         function updateAccountOptions() {
             let type = document.getElementById('txType').value;
-            let transferDiv = document.getElementById('transferToDiv');
-            if (type === 'transfer') {
-                transferDiv.style.display = 'block';
-            } else {
-                transferDiv.style.display = 'none';
-            }
+            document.getElementById('transferToDiv').style.display = (type === 'transfer') ? 'block' : 'none';
+        }
+
+        function isBank(acc) {
+            return acc.includes('bank') || acc === 'dbbl';
         }
 
         function addTransaction(e) {
@@ -381,59 +522,81 @@
             let note = document.getElementById('txNote').value;
 
             if (type === 'transfer' && account === accountTo) {
-                alert("একই অ্যাকাউন্টে ফান্ড ট্রান্সফার করা যাবে না!");
+                alert("একই অ্যাকাউন্টে ট্রান্সফার করা সম্ভব নয়!");
                 return;
             }
 
-            let newTx = { id: Date.now(), date, type, account, accountTo, amount, note };
-            appData.transactions.push(newTx);
+            appData.transactions.push({ id: Date.now(), date, type, account, accountTo, amount, note });
             saveData();
-            
             document.getElementById('txForm').reset();
             document.getElementById('txDate').valueAsDate = new Date();
             alert("এন্ট্রি সফলভাবে সেভ হয়েছে!");
             updateDashboard();
         }
 
+        function addAsset(e) {
+            e.preventDefault();
+            let name = document.getElementById('assetName').value;
+            let value = parseFloat(document.getElementById('assetValue').value);
+            appData.assets.push({ id: Date.now(), name, value });
+            saveData();
+            document.getElementById('assetName').value = '';
+            document.getElementById('assetValue').value = '';
+            updateDashboard();
+        }
+
+        function deleteAsset(id) {
+            appData.assets = appData.assets.filter(a => a.id !== id);
+            saveData();
+            updateDashboard();
+        }
+
+        function addLiability(e) {
+            e.preventDefault();
+            let name = document.getElementById('liabilityName').value;
+            let value = parseFloat(document.getElementById('liabilityValue').value);
+            appData.liabilities.push({ id: Date.now(), name, value });
+            saveData();
+            document.getElementById('liabilityName').value = '';
+            document.getElementById('liabilityValue').value = '';
+            updateDashboard();
+        }
+
+        function deleteLiability(id) {
+            appData.liabilities = appData.liabilities.filter(l => l.id !== id);
+            saveData();
+            updateDashboard();
+        }
+
         function updateDashboard() {
             let cash = 0, bank = 0, bkash = 0;
             let currentMonth = new Date().toISOString().slice(0, 7);
-            let mIncome = 0, mExpense = 0, totalAssets = 0, totalLiabilities = 0;
+            let mIncome = 0, mExpense = 0;
 
             appData.transactions.forEach(tx => {
                 let amt = parseFloat(tx.amount);
                 
-                // Balances
+                let processBalance = (acc, sign) => {
+                    if (acc === 'cash') cash += sign * amt;
+                    else if (acc === 'bkash') bkash += sign * amt;
+                    else if (isBank(acc)) bank += sign * amt;
+                };
+
                 if (tx.type === 'income') {
-                    if (tx.account === 'cash') cash += amt;
-                    if (tx.account === 'bank') bank += amt;
-                    if (tx.account === 'bkash') bkash += amt;
+                    processBalance(tx.account, 1);
                     if (tx.date.startsWith(currentMonth)) mIncome += amt;
                 } else if (tx.type === 'expense') {
-                    if (tx.account === 'cash') cash -= amt;
-                    if (tx.account === 'bank') bank -= amt;
-                    if (tx.account === 'bkash') bkash -= amt;
+                    processBalance(tx.account, -1);
                     if (tx.date.startsWith(currentMonth)) mExpense += amt;
-                } else if (tx.type === 'asset') {
-                    if (tx.account === 'cash') cash -= amt;
-                    if (tx.account === 'bank') bank -= amt;
-                    if (tx.account === 'bkash') bkash -= amt;
-                    totalAssets += amt;
-                } else if (tx.type === 'liability') {
-                    if (tx.account === 'cash') cash += amt;
-                    if (tx.account === 'bank') bank += amt;
-                    if (tx.account === 'bkash') bkash += amt;
-                    totalLiabilities += amt;
                 } else if (tx.type === 'transfer') {
-                    if (tx.account === 'cash') cash -= amt;
-                    if (tx.account === 'bank') bank -= amt;
-                    if (tx.account === 'bkash') bkash -= amt;
-
-                    if (tx.accountTo === 'cash') cash += amt;
-                    if (tx.accountTo === 'bank') bank += amt;
-                    if (tx.accountTo === 'bkash') bkash += amt;
+                    processBalance(tx.account, -1);
+                    processBalance(tx.accountTo, 1);
                 }
             });
+
+            // Assets & Liabilities calculation
+            let totAssets = appData.assets.reduce((sum, a) => sum + parseFloat(a.value), 0);
+            let totLiabilities = appData.liabilities.reduce((sum, l) => sum + parseFloat(l.value), 0);
 
             document.getElementById('cashBalance').innerText = '৳ ' + cash.toLocaleString();
             document.getElementById('bankBalance').innerText = '৳ ' + bank.toLocaleString();
@@ -441,27 +604,84 @@
 
             document.getElementById('monthIncome').innerText = '৳ ' + mIncome.toLocaleString();
             document.getElementById('monthExpense').innerText = '৳ ' + mExpense.toLocaleString();
-            document.getElementById('totalAssets').innerText = '৳ ' + totalAssets.toLocaleString();
-            document.getElementById('totalLiabilities').innerText = '৳ ' + totalLiabilities.toLocaleString();
+            document.getElementById('totalAssets').innerText = '৳ ' + totAssets.toLocaleString();
+            document.getElementById('totalLiabilities').innerText = '৳ ' + totLiabilities.toLocaleString();
+            document.getElementById('assetCardTotal').innerText = '৳ ' + totAssets.toLocaleString();
+            document.getElementById('liabilityCardTotal').innerText = '৳ ' + totLiabilities.toLocaleString();
 
-            // Recent Transactions Table
+            // Render Recent Transactions
             let tbody = document.getElementById('recentTxTable');
             tbody.innerHTML = '';
             let recent = [...appData.transactions].reverse().slice(0, 10);
             
             recent.forEach(tx => {
                 let badge = tx.type === 'income' ? 'bg-success' : tx.type === 'expense' ? 'bg-danger' : 'bg-info';
+                let accName = accLabels[tx.account] || tx.account;
+                let desc = tx.type === 'transfer' ? `ট্রান্সফার -> ${accLabels[tx.accountTo] || tx.accountTo}` : (tx.note || '-');
+                
                 let row = `<tr>
                     <td>${tx.date}</td>
                     <td><span class="badge ${badge}">${tx.type.toUpperCase()}</span></td>
-                    <td>${tx.account.toUpperCase()}</td>
-                    <td>${tx.type === 'transfer' ? 'ট্রান্সফার -> ' + tx.accountTo.toUpperCase() : tx.account.toUpperCase()}</td>
-                    <td>${tx.note || '-'}</td>
+                    <td>${accName}</td>
+                    <td>${desc}</td>
                     <td class="text-end fw-bold">৳ ${tx.amount.toLocaleString()}</td>
-                    <td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="deleteTx(${tx.id})"><i class="fas fa-trash"></i></button></td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditModal(${tx.id})"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteTx(${tx.id})"><i class="fas fa-trash"></i></button>
+                    </td>
                 </tr>`;
                 tbody.innerHTML += row;
             });
+
+            // Render Asset List
+            let assetTbody = document.getElementById('assetListTable');
+            assetTbody.innerHTML = '';
+            appData.assets.forEach(a => {
+                assetTbody.innerHTML += `<tr>
+                    <td>${a.name}</td>
+                    <td class="text-end fw-bold">৳ ${a.value.toLocaleString()}</td>
+                    <td class="text-center"><button class="btn btn-sm text-danger" onclick="deleteAsset(${a.id})"><i class="fas fa-trash"></i></button></td>
+                </tr>`;
+            });
+
+            // Render Liability List
+            let liabilityTbody = document.getElementById('liabilityListTable');
+            liabilityTbody.innerHTML = '';
+            appData.liabilities.forEach(l => {
+                liabilityTbody.innerHTML += `<tr>
+                    <td>${l.name}</td>
+                    <td class="text-end fw-bold text-danger">৳ ${l.value.toLocaleString()}</td>
+                    <td class="text-center"><button class="btn btn-sm text-danger" onclick="deleteLiability(${l.id})"><i class="fas fa-trash"></i></button></td>
+                </tr>`;
+            });
+        }
+
+        function openEditModal(id) {
+            let tx = appData.transactions.find(t => t.id === id);
+            if (!tx) return;
+            document.getElementById('editTxId').value = tx.id;
+            document.getElementById('editTxDate').value = tx.date;
+            document.getElementById('editTxType').value = tx.type;
+            document.getElementById('editTxAccount').value = tx.account;
+            document.getElementById('editTxAmount').value = tx.amount;
+            document.getElementById('editTxNote').value = tx.note || '';
+            editModalObj.show();
+        }
+
+        function saveEditedTx() {
+            let id = parseInt(document.getElementById('editTxId').value);
+            let txIndex = appData.transactions.findIndex(t => t.id === id);
+            if (txIndex !== -1) {
+                appData.transactions[txIndex].date = document.getElementById('editTxDate').value;
+                appData.transactions[txIndex].type = document.getElementById('editTxType').value;
+                appData.transactions[txIndex].account = document.getElementById('editTxAccount').value;
+                appData.transactions[txIndex].amount = parseFloat(document.getElementById('editTxAmount').value);
+                appData.transactions[txIndex].note = document.getElementById('editTxNote').value;
+                saveData();
+                updateDashboard();
+                editModalObj.hide();
+                alert("লেনদেন সফলভাবে আপডেট করা হয়েছে!");
+            }
         }
 
         function deleteTx(id) {
@@ -475,40 +695,36 @@
         function generateReport() {
             let selectedMonth = document.getElementById('reportMonth').value;
             document.getElementById('reportPeriodText').innerText = "মাস: " + selectedMonth;
-            
             let tbody = document.getElementById('reportTableBody');
             tbody.innerHTML = '';
-
-            let inc = 0, exp = 0, ast = 0, lia = 0;
+            let inc = 0, exp = 0;
 
             let filtered = appData.transactions.filter(t => t.date.startsWith(selectedMonth));
-            
             filtered.forEach(tx => {
                 let amt = parseFloat(tx.amount);
                 if (tx.type === 'income') inc += amt;
                 if (tx.type === 'expense') exp += amt;
-                if (tx.type === 'asset') ast += amt;
-                if (tx.type === 'liability') lia += amt;
 
                 let row = `<tr>
                     <td>${tx.date}</td>
                     <td>${tx.type}</td>
-                    <td>${tx.account}</td>
+                    <td>${accLabels[tx.account] || tx.account}</td>
                     <td>${tx.note || '-'}</td>
                     <td class="text-end">৳ ${tx.amount.toLocaleString()}</td>
                 </tr>`;
                 tbody.innerHTML += row;
             });
 
+            let totAssets = appData.assets.reduce((sum, a) => sum + parseFloat(a.value), 0);
+            let totLiabilities = appData.liabilities.reduce((sum, l) => sum + parseFloat(l.value), 0);
+
             document.getElementById('repIncome').innerText = '৳ ' + inc.toLocaleString();
             document.getElementById('repExpense').innerText = '৳ ' + exp.toLocaleString();
-            document.getElementById('repAsset').innerText = '৳ ' + ast.toLocaleString();
-            document.getElementById('repLiability').innerText = '৳ ' + lia.toLocaleString();
+            document.getElementById('repAsset').innerText = '৳ ' + totAssets.toLocaleString();
+            document.getElementById('repLiability').innerText = '৳ ' + totLiabilities.toLocaleString();
         }
 
-        function saveData() {
-            localStorage.setItem('myfinance_data', JSON.stringify(appData));
-        }
+        function saveData() { localStorage.setItem('myfinance_data', JSON.stringify(appData)); }
 
         function exportData() {
             let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData));
@@ -525,27 +741,26 @@
             reader.onload = function(e) {
                 try {
                     let imported = JSON.parse(e.target.result);
-                    if (imported && imported.transactions) {
+                    if (imported) {
                         appData = imported;
+                        if (!appData.assets) appData.assets = [];
+                        if (!appData.liabilities) appData.liabilities = [];
                         saveData();
                         alert("ডাটা সফলভাবে লোড হয়েছে!");
                         updateDashboard();
-                    } else {
-                        alert("ভুল ব্যাকআপ ফাইল!");
                     }
-                } catch(err) {
-                    alert("ফাইলটি সঠিকভাবে পড়া যায়নি!");
-                }
+                } catch(err) { alert("ফাইল পড়া যায়নি!"); }
             };
             reader.readAsText(event.target.files[0]);
         }
 
         function resetAllData() {
-            if (confirm("আপনি কি নিশ্চিত সমস্ত ডাটা ডিলিট করে দিতে চান? এটি আর ফিরিয়ে আনা যাবে না!")) {
+            if (confirm("আপনি কি নিশ্চিত সমস্ত ডাটা মুছে ফেলবেন?")) {
                 appData.transactions = [];
+                appData.assets = [];
+                appData.liabilities = [];
                 saveData();
                 updateDashboard();
-                alert("সমস্ত ডাটা রিসেট করা হয়েছে।");
             }
         }
     </script>
