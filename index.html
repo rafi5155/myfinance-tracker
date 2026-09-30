@@ -14,7 +14,6 @@
         .bg-gradient-warning { background: linear-gradient(45deg, #f6c23e, #dda20a); color: white; }
         .bg-gradient-info { background: linear-gradient(45deg, #36b9cc, #258391); color: white; }
         .nav-pills .nav-link.active { background-color: #0d6efd; color: white; }
-        #lockScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1c23; z-index: 9999; display: flex; align-items: center; justify-content: center; }
         @media print {
             .no-print { display: none !important; }
             .card { box-shadow: none !important; border: 1px solid #ccc !important; }
@@ -23,19 +22,6 @@
     </style>
 </head>
 <body>
-
-    <!-- Lock Screen Modal -->
-    <div id="lockScreen">
-        <div class="card p-4 text-center" style="max-width: 380px; width: 90%;">
-            <div class="mb-3">
-                <i class="fas fa-user-lock fa-3x text-primary"></i>
-            </div>
-            <h4 id="lockTitle" class="mb-3">পাসওয়ার্ড দিন</h4>
-            <input type="password" id="pinInput" class="form-control text-center fs-4 mb-3" placeholder="****" maxlength="8">
-            <button class="btn btn-primary w-100 fw-bold" onclick="checkPin()">আনলক করুন</button>
-            <div id="pinError" class="text-danger mt-2 small" style="display:none;">ভুল পাসওয়ার্ড! আবার চেষ্টা করুন।</div>
-        </div>
-    </div>
 
     <!-- Edit Transaction Modal -->
     <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
@@ -90,15 +76,11 @@
     </div>
 
     <!-- Main Application Container -->
-    <div class="container py-4" id="appContent" style="display:none;">
+    <div class="container py-4" id="appContent">
         
         <!-- Header Nav -->
         <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom no-print">
             <h3 class="fw-bold text-primary mb-0"><i class="fas fa-wallet me-2"></i>পার্সোনাল ফিন্যান্স ট্র্যাকার</h3>
-            <div>
-                <button class="btn btn-sm btn-outline-secondary me-2" onclick="lockApp()"><i class="fas fa-lock me-1"></i>লক করুন</button>
-                <button class="btn btn-sm btn-outline-danger" onclick="resetPin()"><i class="fas fa-key me-1"></i>পাসওয়ার্ড চেঞ্জ</button>
-            </div>
         </div>
 
         <!-- Navigation Tabs -->
@@ -298,7 +280,7 @@
                                         <input type="number" id="assetValue" class="form-control" placeholder="মূল্য (৳)" required>
                                     </div>
                                     <div class="col-3">
-                                        <button type="submit" class="btn btn-teal text-white w-100 fw-bold" style="background-color: #0d9488;">যোগ করুন</button>
+                                        <button type="submit" class="btn text-white w-100 fw-bold" style="background-color: #0d9488;">যোগ করুন</button>
                                     </div>
                                 </div>
                             </form>
@@ -448,7 +430,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let appData = { transactions: [], assets: [], liabilities: [], pin: "1234" };
+        let appData = { transactions: [], assets: [], liabilities: [] };
         let editModalObj = null;
 
         const accLabels = {
@@ -474,34 +456,8 @@
             document.getElementById('txDate').valueAsDate = new Date();
             document.getElementById('reportMonth').value = new Date().toISOString().slice(0, 7);
             editModalObj = new bootstrap.Modal(document.getElementById('editModal'));
+            updateDashboard();
         };
-
-        function checkPin() {
-            let input = document.getElementById('pinInput').value;
-            if (input === appData.pin) {
-                document.getElementById('lockScreen').style.display = 'none';
-                document.getElementById('appContent').style.display = 'block';
-                document.getElementById('pinInput').value = '';
-                document.getElementById('pinError').style.display = 'none';
-                updateDashboard();
-            } else {
-                document.getElementById('pinError').style.display = 'block';
-            }
-        }
-
-        function lockApp() {
-            document.getElementById('appContent').style.display = 'none';
-            document.getElementById('lockScreen').style.display = 'flex';
-        }
-
-        function resetPin() {
-            let newPin = prompt("নতুন ৪-৮ ডিজিটের পাসওয়ার্ড লিখুন:");
-            if (newPin && newPin.trim().length >= 4) {
-                appData.pin = newPin.trim();
-                saveData();
-                alert("পাসওয়ার্ড পরিবর্তন হয়েছে!");
-            }
-        }
 
         function updateAccountOptions() {
             let type = document.getElementById('txType').value;
@@ -573,30 +529,31 @@
             let currentMonth = new Date().toISOString().slice(0, 7);
             let mIncome = 0, mExpense = 0;
 
-            appData.transactions.forEach(tx => {
-                let amt = parseFloat(tx.amount);
-                
-                let processBalance = (acc, sign) => {
-                    if (acc === 'cash') cash += sign * amt;
-                    else if (acc === 'bkash') bkash += sign * amt;
-                    else if (isBank(acc)) bank += sign * amt;
-                };
+            if(appData.transactions) {
+                appData.transactions.forEach(tx => {
+                    let amt = parseFloat(tx.amount);
+                    
+                    let processBalance = (acc, sign) => {
+                        if (acc === 'cash') cash += sign * amt;
+                        else if (acc === 'bkash') bkash += sign * amt;
+                        else if (isBank(acc)) bank += sign * amt;
+                    };
 
-                if (tx.type === 'income') {
-                    processBalance(tx.account, 1);
-                    if (tx.date.startsWith(currentMonth)) mIncome += amt;
-                } else if (tx.type === 'expense') {
-                    processBalance(tx.account, -1);
-                    if (tx.date.startsWith(currentMonth)) mExpense += amt;
-                } else if (tx.type === 'transfer') {
-                    processBalance(tx.account, -1);
-                    processBalance(tx.accountTo, 1);
-                }
-            });
+                    if (tx.type === 'income') {
+                        processBalance(tx.account, 1);
+                        if (tx.date.startsWith(currentMonth)) mIncome += amt;
+                    } else if (tx.type === 'expense') {
+                        processBalance(tx.account, -1);
+                        if (tx.date.startsWith(currentMonth)) mExpense += amt;
+                    } else if (tx.type === 'transfer') {
+                        processBalance(tx.account, -1);
+                        processBalance(tx.accountTo, 1);
+                    }
+                });
+            }
 
-            // Assets & Liabilities calculation
-            let totAssets = appData.assets.reduce((sum, a) => sum + parseFloat(a.value), 0);
-            let totLiabilities = appData.liabilities.reduce((sum, l) => sum + parseFloat(l.value), 0);
+            let totAssets = appData.assets ? appData.assets.reduce((sum, a) => sum + parseFloat(a.value), 0) : 0;
+            let totLiabilities = appData.liabilities ? appData.liabilities.reduce((sum, l) => sum + parseFloat(l.value), 0) : 0;
 
             document.getElementById('cashBalance').innerText = '৳ ' + cash.toLocaleString();
             document.getElementById('bankBalance').innerText = '৳ ' + bank.toLocaleString();
@@ -612,7 +569,7 @@
             // Render Recent Transactions
             let tbody = document.getElementById('recentTxTable');
             tbody.innerHTML = '';
-            let recent = [...appData.transactions].reverse().slice(0, 10);
+            let recent = appData.transactions ? [...appData.transactions].reverse().slice(0, 10) : [];
             
             recent.forEach(tx => {
                 let badge = tx.type === 'income' ? 'bg-success' : tx.type === 'expense' ? 'bg-danger' : 'bg-info';
@@ -636,24 +593,28 @@
             // Render Asset List
             let assetTbody = document.getElementById('assetListTable');
             assetTbody.innerHTML = '';
-            appData.assets.forEach(a => {
-                assetTbody.innerHTML += `<tr>
-                    <td>${a.name}</td>
-                    <td class="text-end fw-bold">৳ ${a.value.toLocaleString()}</td>
-                    <td class="text-center"><button class="btn btn-sm text-danger" onclick="deleteAsset(${a.id})"><i class="fas fa-trash"></i></button></td>
-                </tr>`;
-            });
+            if(appData.assets) {
+                appData.assets.forEach(a => {
+                    assetTbody.innerHTML += `<tr>
+                        <td>${a.name}</td>
+                        <td class="text-end fw-bold">৳ ${a.value.toLocaleString()}</td>
+                        <td class="text-center"><button class="btn btn-sm text-danger" onclick="deleteAsset(${a.id})"><i class="fas fa-trash"></i></button></td>
+                    </tr>`;
+                });
+            }
 
             // Render Liability List
             let liabilityTbody = document.getElementById('liabilityListTable');
             liabilityTbody.innerHTML = '';
-            appData.liabilities.forEach(l => {
-                liabilityTbody.innerHTML += `<tr>
-                    <td>${l.name}</td>
-                    <td class="text-end fw-bold text-danger">৳ ${l.value.toLocaleString()}</td>
-                    <td class="text-center"><button class="btn btn-sm text-danger" onclick="deleteLiability(${l.id})"><i class="fas fa-trash"></i></button></td>
-                </tr>`;
-            });
+            if(appData.liabilities) {
+                appData.liabilities.forEach(l => {
+                    liabilityTbody.innerHTML += `<tr>
+                        <td>${l.name}</td>
+                        <td class="text-end fw-bold text-danger">৳ ${l.value.toLocaleString()}</td>
+                        <td class="text-center"><button class="btn btn-sm text-danger" onclick="deleteLiability(${l.id})"><i class="fas fa-trash"></i></button></td>
+                    </tr>`;
+                });
+            }
         }
 
         function openEditModal(id) {
@@ -699,7 +660,7 @@
             tbody.innerHTML = '';
             let inc = 0, exp = 0;
 
-            let filtered = appData.transactions.filter(t => t.date.startsWith(selectedMonth));
+            let filtered = appData.transactions ? appData.transactions.filter(t => t.date.startsWith(selectedMonth)) : [];
             filtered.forEach(tx => {
                 let amt = parseFloat(tx.amount);
                 if (tx.type === 'income') inc += amt;
@@ -715,8 +676,8 @@
                 tbody.innerHTML += row;
             });
 
-            let totAssets = appData.assets.reduce((sum, a) => sum + parseFloat(a.value), 0);
-            let totLiabilities = appData.liabilities.reduce((sum, l) => sum + parseFloat(l.value), 0);
+            let totAssets = appData.assets ? appData.assets.reduce((sum, a) => sum + parseFloat(a.value), 0) : 0;
+            let totLiabilities = appData.liabilities ? appData.liabilities.reduce((sum, l) => sum + parseFloat(l.value), 0) : 0;
 
             document.getElementById('repIncome').innerText = '৳ ' + inc.toLocaleString();
             document.getElementById('repExpense').innerText = '৳ ' + exp.toLocaleString();
