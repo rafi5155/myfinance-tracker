@@ -47,15 +47,7 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-bold">অ্যাকাউন্ট</label>
-                            <select id="editTxAccount" class="form-select" required>
-                                <option value="cash">নগদ টাকা (Cash)</option>
-                                <option value="bkash">বিকাশ (bKash)</option>
-                                <option value="islamic_bank">ইসলামী ব্যাংক</option>
-                                <option value="brac_bank">ব্র্যাক ব্যাংক</option>
-                                <option value="dbbl">ডাচ-বাংলা ব্যাংক</option>
-                                <option value="dhaka_bank">ঢাকা ব্যাংক</option>
-                                <option value="other_bank">অন্যান্য ব্যাংক</option>
-                            </select>
+                            <select id="editTxAccount" class="form-select edit-account-select" required></select>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-bold">পরিমাণ (৳)</label>
@@ -87,6 +79,9 @@
         <ul class="nav nav-pills mb-4 no-print" id="pills-tab" role="tablist">
             <li class="nav-item">
                 <button class="nav-link active fw-bold" id="pills-dashboard-tab" data-bs-toggle="pill" data-bs-target="#pills-dashboard"><i class="fas fa-chart-pie me-1"></i> ওভারভিউ</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link fw-bold" id="pills-accounts-tab" data-bs-toggle="pill" data-bs-target="#pills-accounts"><i class="fas fa-university me-1"></i> অ্যাকাউন্টস</button>
             </li>
             <li class="nav-item">
                 <button class="nav-link fw-bold" id="pills-entry-tab" data-bs-toggle="pill" data-bs-target="#pills-entry"><i class="fas fa-list-alt me-1"></i> আয় ও ব্যয়</button>
@@ -137,42 +132,8 @@
                 </div>
 
                 <!-- Account Balances Cards -->
-                <h5 class="fw-bold mb-3 text-secondary"><i class="fas fa-university me-1"></i> বর্তমান ব্যালেন্স স্ট্যাটাস</h5>
-                <div class="row g-3 mb-4">
-                    <div class="col-md-4">
-                        <div class="card p-3 border-start border-primary border-4">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <small class="text-muted">মোট ব্যাংক ব্যালেন্স</small>
-                                    <h3 class="fw-bold text-primary mb-0" id="bankBalance">৳ 0</h3>
-                                </div>
-                                <i class="fas fa-university fa-2x text-primary opacity-50"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card p-3 border-start border-pink border-4" style="border-left-color: #e83e8c !important;">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <small class="text-muted">বিকাশ ব্যালেন্স</small>
-                                    <h3 class="fw-bold mb-0" style="color: #e83e8c;" id="bkashBalance">৳ 0</h3>
-                                </div>
-                                <i class="fas fa-mobile-alt fa-2x opacity-50" style="color: #e83e8c;"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card p-3 border-start border-success border-4">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <small class="text-muted">নগদ টাকা (Cash)</small>
-                                    <h3 class="fw-bold text-success mb-0" id="cashBalance">৳ 0</h3>
-                                </div>
-                                <i class="fas fa-money-bill-wave fa-2x text-success opacity-50"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <h5 class="fw-bold mb-3 text-secondary"><i class="fas fa-university me-1"></i> বর্তমান অ্যাকাউন্ট ব্যালেন্স</h5>
+                <div class="row g-3 mb-4" id="accountCardsContainer"></div>
 
                 <!-- Recent Transactions Table -->
                 <div class="card p-3">
@@ -195,7 +156,58 @@
                 </div>
             </div>
 
-            <!-- Transaction Entry Tab (Income / Expense / Transfer) -->
+            <!-- Accounts Entry Tab -->
+            <div class="tab-pane fade" id="pills-accounts">
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
+                        <div class="card p-4 mb-4">
+                            <h4 class="fw-bold mb-3 text-center text-primary"><i class="fas fa-plus-circle me-1"></i> নতুন অ্যাকাউন্ট যোগ করুন</h4>
+                            <form onsubmit="addAccount(event)">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">অ্যাকাউন্টের নাম</label>
+                                        <input type="text" id="accName" class="form-control" placeholder="যেমন: ইসলামী ব্যাংক, বিকাশ, ক্যাশ" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">অ্যাকাউন্টের ধরণ</label>
+                                        <select id="accType" class="form-select" required>
+                                            <option value="bank">ব্যাংক (Bank)</option>
+                                            <option value="mfs">মোবাইল ব্যাংকিং (bKash/Nagad/Rocket)</option>
+                                            <option value="cash">নগদ টাকা (Cash)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label fw-bold">প্রাথমিক ব্যালেন্স (৳)</label>
+                                        <input type="number" id="accInitial" class="form-control" placeholder="0.00" value="0">
+                                    </div>
+                                    <div class="col-12 mt-3">
+                                        <button type="submit" class="btn btn-primary w-100 fw-bold py-2">অ্যাকাউন্ট সেভ করুন</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="card p-4">
+                            <h5 class="fw-bold mb-3">আপনার সেভ করা অ্যাকাউন্ট তালিকা</h5>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>নাম</th>
+                                            <th>ধরণ</th>
+                                            <th class="text-end">বর্তমান ব্যালেন্স</th>
+                                            <th class="text-center">মুছুন</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="accountsListTable"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transaction Entry Tab -->
             <div class="tab-pane fade" id="pills-entry">
                 <div class="row justify-content-center">
                     <div class="col-md-8">
@@ -212,36 +224,16 @@
                                         <select id="txType" class="form-select" onchange="updateAccountOptions()" required>
                                             <option value="income">আয় (Income)</option>
                                             <option value="expense">ব্যয় (Expense)</option>
-                                            <option value="transfer">ফান্ড ট্রান্সফার (ক্যাশ ⇄ ব্যাংক)</option>
+                                            <option value="transfer">ফান্ড ট্রান্সফার</option>
                                         </select>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold">অ্যাকাউন্ট (মার্ফত)</label>
-                                        <select id="txAccount" class="form-select" required>
-                                            <option value="cash">নগদ টাকা (Cash)</option>
-                                            <option value="bkash">বিকাশ (bKash)</option>
-                                            <optgroup label="ব্যাংক হিসাব">
-                                                <option value="islamic_bank">ইসলামী ব্যাংক</option>
-                                                <option value="brac_bank">ব্র্যাক ব্যাংক</option>
-                                                <option value="dbbl">ডাচ-বাংলা ব্যাংক</option>
-                                                <option value="dhaka_bank">ঢাকা ব্যাংক</option>
-                                                <option value="other_bank">অন্যান্য ব্যাংক</option>
-                                            </optgroup>
-                                        </select>
+                                        <select id="txAccount" class="form-select account-select-list" required></select>
                                     </div>
                                     <div class="col-md-6" id="transferToDiv" style="display:none;">
                                         <label class="form-label fw-bold">কোথায় পাঠাচ্ছেন?</label>
-                                        <select id="txAccountTo" class="form-select">
-                                            <option value="cash">নগদ টাকা (Cash)</option>
-                                            <option value="bkash">বিকাশ (bKash)</option>
-                                            <optgroup label="ব্যাংক হিসাব">
-                                                <option value="islamic_bank">ইসলামী ব্যাংক</option>
-                                                <option value="brac_bank">ব্র্যাক ব্যাংক</option>
-                                                <option value="dbbl">ডাচ-বাংলা ব্যাংক</option>
-                                                <option value="dhaka_bank">ঢাকা ব্যাংক</option>
-                                                <option value="other_bank">অন্যান্য ব্যাংক</option>
-                                            </optgroup>
-                                        </select>
+                                        <select id="txAccountTo" class="form-select account-select-list"></select>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold">পরিমাণ (৳)</label>
@@ -261,10 +253,9 @@
                 </div>
             </div>
 
-            <!-- Assets & Liabilities Dedicated Tab -->
+            <!-- Assets & Liabilities Tab -->
             <div class="tab-pane fade" id="pills-assets">
                 <div class="row g-4">
-                    <!-- Fixed Assets Card -->
                     <div class="col-md-6">
                         <div class="card p-4">
                             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -274,7 +265,7 @@
                             <form onsubmit="addAsset(event)" class="mb-3">
                                 <div class="row g-2">
                                     <div class="col-6">
-                                        <input type="text" id="assetName" class="form-control" placeholder="সম্পদের নাম (যেমন: সোনা, জমি)" required>
+                                        <input type="text" id="assetName" class="form-control" placeholder="সম্পদের নাম" required>
                                     </div>
                                     <div class="col-3">
                                         <input type="number" id="assetValue" class="form-control" placeholder="মূল্য (৳)" required>
@@ -299,7 +290,6 @@
                         </div>
                     </div>
 
-                    <!-- Liabilities Card -->
                     <div class="col-md-6">
                         <div class="card p-4">
                             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -309,7 +299,7 @@
                             <form onsubmit="addLiability(event)" class="mb-3">
                                 <div class="row g-2">
                                     <div class="col-6">
-                                        <input type="text" id="liabilityName" class="form-control" placeholder="দায়ের নাম (যেমন: লোন, নাম)" required>
+                                        <input type="text" id="liabilityName" class="form-control" placeholder="দায়ের নাম" required>
                                     </div>
                                     <div class="col-3">
                                         <input type="number" id="liabilityValue" class="form-control" placeholder="পরিমাণ (৳)" required>
@@ -418,7 +408,7 @@
 
                         <div class="card p-4 border-danger">
                             <h5 class="fw-bold text-danger mb-2">ডাটা রিসেট</h5>
-                            <p class="text-muted small">সব লেনদেনের হিসাব মুছে ফেলে একদম নতুন করে শুরু করতে চাইলে রিসেট বাটনে চাপ দিন।</p>
+                            <p class="text-muted small">সব হিসাব মুছে ফেলে একদম নতুন করে শুরু করতে চাইলে রিসেট বাটনে চাপ দিন।</p>
                             <button class="btn btn-danger fw-bold" onclick="resetAllData()">সমস্ত ডাটা ডিলিট করুন</button>
                         </div>
                     </div>
@@ -430,50 +420,86 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let appData = { transactions: [], assets: [], liabilities: [] };
+        let appData = { accounts: [], transactions: [], assets: [], liabilities: [] };
         let editModalObj = null;
-
-        const accLabels = {
-            cash: 'নগদ (Cash)',
-            bkash: 'বিকাশ (bKash)',
-            islamic_bank: 'ইসলামী ব্যাংক',
-            brac_bank: 'ব্র্যাক ব্যাংক',
-            dbbl: 'ডাচ-বাংলা ব্যাংক',
-            dhaka_bank: 'ঢাকা ব্যাংক',
-            other_bank: 'অন্যান্য ব্যাংক'
-        };
 
         window.onload = function() {
             let savedData = localStorage.getItem('myfinance_data');
             if (savedData) {
                 appData = JSON.parse(savedData);
+                if (!appData.accounts) appData.accounts = [
+                    { id: 1, name: 'নগদ টাকা (Cash)', type: 'cash', initial: 0 },
+                    { id: 2, name: 'বিকাশ (bKash)', type: 'mfs', initial: 0 }
+                ];
                 if (!appData.assets) appData.assets = [];
                 if (!appData.liabilities) appData.liabilities = [];
             } else {
+                appData.accounts = [
+                    { id: 1, name: 'নগদ টাকা (Cash)', type: 'cash', initial: 0 },
+                    { id: 2, name: 'বিকাশ (bKash)', type: 'mfs', initial: 0 }
+                ];
                 localStorage.setItem('myfinance_data', JSON.stringify(appData));
             }
             
             document.getElementById('txDate').valueAsDate = new Date();
             document.getElementById('reportMonth').value = new Date().toISOString().slice(0, 7);
             editModalObj = new bootstrap.Modal(document.getElementById('editModal'));
+            
+            updateAccountDropdowns();
             updateDashboard();
         };
+
+        function addAccount(e) {
+            e.preventDefault();
+            let name = document.getElementById('accName').value.trim();
+            let type = document.getElementById('accType').value;
+            let initial = parseFloat(document.getElementById('accInitial').value) || 0;
+
+            if (appData.accounts.some(a => a.name.toLowerCase() === name.toLowerCase())) {
+                alert("এই নামে ইতিমধ্যে একটি অ্যাকাউন্ট আছে!");
+                return;
+            }
+
+            appData.accounts.push({ id: Date.now(), name, type, initial });
+            saveData();
+            document.getElementById('accName').value = '';
+            document.getElementById('accInitial').value = '0';
+            
+            updateAccountDropdowns();
+            updateDashboard();
+            alert("অ্যাকাউন্ট সফলভাবে যোগ করা হয়েছে!");
+        }
+
+        function deleteAccount(id) {
+            if (confirm("আপনি কি নিশ্চিত এই অ্যাকাউন্টটি মুছে ফেলতে চান?")) {
+                appData.accounts = appData.accounts.filter(a => a.id !== id);
+                saveData();
+                updateAccountDropdowns();
+                updateDashboard();
+            }
+        }
+
+        function updateAccountDropdowns() {
+            let selects = document.querySelectorAll('.account-select-list, .edit-account-select');
+            selects.forEach(select => {
+                select.innerHTML = '';
+                appData.accounts.forEach(acc => {
+                    select.innerHTML += `<option value="${acc.id}">${acc.name}</option>`;
+                });
+            });
+        }
 
         function updateAccountOptions() {
             let type = document.getElementById('txType').value;
             document.getElementById('transferToDiv').style.display = (type === 'transfer') ? 'block' : 'none';
         }
 
-        function isBank(acc) {
-            return acc.includes('bank') || acc === 'dbbl';
-        }
-
         function addTransaction(e) {
             e.preventDefault();
             let date = document.getElementById('txDate').value;
             let type = document.getElementById('txType').value;
-            let account = document.getElementById('txAccount').value;
-            let accountTo = document.getElementById('txAccountTo').value;
+            let account = parseInt(document.getElementById('txAccount').value);
+            let accountTo = parseInt(document.getElementById('txAccountTo').value);
             let amount = parseFloat(document.getElementById('txAmount').value);
             let note = document.getElementById('txNote').value;
 
@@ -524,40 +550,61 @@
             updateDashboard();
         }
 
+        function getAccountName(id) {
+            let acc = appData.accounts.find(a => a.id === parseInt(id));
+            return acc ? acc.name : 'অজানা অ্যাকাউন্ট';
+        }
+
         function updateDashboard() {
-            let cash = 0, bank = 0, bkash = 0;
             let currentMonth = new Date().toISOString().slice(0, 7);
             let mIncome = 0, mExpense = 0;
 
-            if(appData.transactions) {
+            // Calculate Account Balances Dynamically
+            let accBalances = {};
+            appData.accounts.forEach(a => accBalances[a.id] = parseFloat(a.initial || 0));
+
+            if (appData.transactions) {
                 appData.transactions.forEach(tx => {
                     let amt = parseFloat(tx.amount);
-                    
-                    let processBalance = (acc, sign) => {
-                        if (acc === 'cash') cash += sign * amt;
-                        else if (acc === 'bkash') bkash += sign * amt;
-                        else if (isBank(acc)) bank += sign * amt;
-                    };
-
                     if (tx.type === 'income') {
-                        processBalance(tx.account, 1);
+                        if (accBalances[tx.account] !== undefined) accBalances[tx.account] += amt;
                         if (tx.date.startsWith(currentMonth)) mIncome += amt;
                     } else if (tx.type === 'expense') {
-                        processBalance(tx.account, -1);
+                        if (accBalances[tx.account] !== undefined) accBalances[tx.account] -= amt;
                         if (tx.date.startsWith(currentMonth)) mExpense += amt;
                     } else if (tx.type === 'transfer') {
-                        processBalance(tx.account, -1);
-                        processBalance(tx.accountTo, 1);
+                        if (accBalances[tx.account] !== undefined) accBalances[tx.account] -= amt;
+                        if (accBalances[tx.accountTo] !== undefined) accBalances[tx.accountTo] += amt;
                     }
                 });
             }
 
+            // Render Dynamic Account Cards in Dashboard
+            let cardsContainer = document.getElementById('accountCardsContainer');
+            cardsContainer.innerHTML = '';
+            appData.accounts.forEach(acc => {
+                let bal = accBalances[acc.id] || 0;
+                let icon = acc.type === 'bank' ? 'fa-university' : acc.type === 'mfs' ? 'fa-mobile-alt' : 'fa-money-bill-wave';
+                let colorClass = acc.type === 'bank' ? 'border-primary text-primary' : acc.type === 'mfs' ? 'border-danger text-danger' : 'border-success text-success';
+
+                cardsContainer.innerHTML += `
+                    <div class="col-md-4 col-6">
+                        <div class="card p-3 border-start ${colorClass} border-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <small class="text-muted">${acc.name}</small>
+                                    <h3 class="fw-bold mb-0">৳ ${bal.toLocaleString()}</h3>
+                                </div>
+                                <i class="fas ${icon} fa-2x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Assets & Liabilities
             let totAssets = appData.assets ? appData.assets.reduce((sum, a) => sum + parseFloat(a.value), 0) : 0;
             let totLiabilities = appData.liabilities ? appData.liabilities.reduce((sum, l) => sum + parseFloat(l.value), 0) : 0;
-
-            document.getElementById('cashBalance').innerText = '৳ ' + cash.toLocaleString();
-            document.getElementById('bankBalance').innerText = '৳ ' + bank.toLocaleString();
-            document.getElementById('bkashBalance').innerText = '৳ ' + bkash.toLocaleString();
 
             document.getElementById('monthIncome').innerText = '৳ ' + mIncome.toLocaleString();
             document.getElementById('monthExpense').innerText = '৳ ' + mExpense.toLocaleString();
@@ -566,6 +613,19 @@
             document.getElementById('assetCardTotal').innerText = '৳ ' + totAssets.toLocaleString();
             document.getElementById('liabilityCardTotal').innerText = '৳ ' + totLiabilities.toLocaleString();
 
+            // Render Accounts Management Table
+            let accTbody = document.getElementById('accountsListTable');
+            accTbody.innerHTML = '';
+            appData.accounts.forEach(acc => {
+                let bal = accBalances[acc.id] || 0;
+                accTbody.innerHTML += `<tr>
+                    <td class="fw-bold">${acc.name}</td>
+                    <td><span class="badge bg-secondary">${acc.type.toUpperCase()}</span></td>
+                    <td class="text-end fw-bold">৳ ${bal.toLocaleString()}</td>
+                    <td class="text-center"><button class="btn btn-sm text-danger" onclick="deleteAccount(${acc.id})"><i class="fas fa-trash"></i></button></td>
+                </tr>`;
+            });
+
             // Render Recent Transactions
             let tbody = document.getElementById('recentTxTable');
             tbody.innerHTML = '';
@@ -573,8 +633,8 @@
             
             recent.forEach(tx => {
                 let badge = tx.type === 'income' ? 'bg-success' : tx.type === 'expense' ? 'bg-danger' : 'bg-info';
-                let accName = accLabels[tx.account] || tx.account;
-                let desc = tx.type === 'transfer' ? `ট্রান্সফার -> ${accLabels[tx.accountTo] || tx.accountTo}` : (tx.note || '-');
+                let accName = getAccountName(tx.account);
+                let desc = tx.type === 'transfer' ? `ট্রান্সফার -> ${getAccountName(tx.accountTo)}` : (tx.note || '-');
                 
                 let row = `<tr>
                     <td>${tx.date}</td>
@@ -590,7 +650,7 @@
                 tbody.innerHTML += row;
             });
 
-            // Render Asset List
+            // Render Assets
             let assetTbody = document.getElementById('assetListTable');
             assetTbody.innerHTML = '';
             if(appData.assets) {
@@ -603,7 +663,7 @@
                 });
             }
 
-            // Render Liability List
+            // Render Liabilities
             let liabilityTbody = document.getElementById('liabilityListTable');
             liabilityTbody.innerHTML = '';
             if(appData.liabilities) {
@@ -635,7 +695,7 @@
             if (txIndex !== -1) {
                 appData.transactions[txIndex].date = document.getElementById('editTxDate').value;
                 appData.transactions[txIndex].type = document.getElementById('editTxType').value;
-                appData.transactions[txIndex].account = document.getElementById('editTxAccount').value;
+                appData.transactions[txIndex].account = parseInt(document.getElementById('editTxAccount').value);
                 appData.transactions[txIndex].amount = parseFloat(document.getElementById('editTxAmount').value);
                 appData.transactions[txIndex].note = document.getElementById('editTxNote').value;
                 saveData();
@@ -669,7 +729,7 @@
                 let row = `<tr>
                     <td>${tx.date}</td>
                     <td>${tx.type}</td>
-                    <td>${accLabels[tx.account] || tx.account}</td>
+                    <td>${getAccountName(tx.account)}</td>
                     <td>${tx.note || '-'}</td>
                     <td class="text-end">৳ ${tx.amount.toLocaleString()}</td>
                 </tr>`;
@@ -704,9 +764,11 @@
                     let imported = JSON.parse(e.target.result);
                     if (imported) {
                         appData = imported;
+                        if (!appData.accounts) appData.accounts = [];
                         if (!appData.assets) appData.assets = [];
                         if (!appData.liabilities) appData.liabilities = [];
                         saveData();
+                        updateAccountDropdowns();
                         alert("ডাটা সফলভাবে লোড হয়েছে!");
                         updateDashboard();
                     }
@@ -717,10 +779,15 @@
 
         function resetAllData() {
             if (confirm("আপনি কি নিশ্চিত সমস্ত ডাটা মুছে ফেলবেন?")) {
+                appData.accounts = [
+                    { id: 1, name: 'নগদ টাকা (Cash)', type: 'cash', initial: 0 },
+                    { id: 2, name: 'বিকাশ (bKash)', type: 'mfs', initial: 0 }
+                ];
                 appData.transactions = [];
                 appData.assets = [];
                 appData.liabilities = [];
                 saveData();
+                updateAccountDropdowns();
                 updateDashboard();
             }
         }
